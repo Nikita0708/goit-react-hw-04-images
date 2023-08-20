@@ -1,49 +1,39 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import style from './ImageGalleryItem.module.css';
 import { Modal } from 'components/Modal';
 
-export class ImageGalleryItem extends Component {
-    state = {
-        showModal: false,
-    };
+export const ImageGalleryItem = ({ webformatURL, largeImageURL, tags }) => {
+  const [showModal, setShowModal] = useState(false);
 
-    static propTypes = {
-        id: PropTypes.number,
-        webformatURL: PropTypes.string.isRequired,
-        largeImageURL: PropTypes.string.isRequired,
-        tags: PropTypes.string.isRequired,
-    };
+  const toggleModal = () => {
+    setShowModal(prevShowModal => !prevShowModal);
+  };
 
-    toggleModal = () => {
-        this.setState(({ showModal }) => ({
-            showModal: !showModal,
-        }));
-    };
+  return (
+    <>
+      <li className={style.GalleryItem} onClick={toggleModal}>
+        <img
+          className={style.GalleryItemImg}
+          src={webformatURL}
+          width="400"
+          alt={tags}
+        />
+      </li>
 
-    render() {
-        const { id, webformatURL, largeImageURL, tags } = this.props;
-        const { showModal } = this.state;
+      {showModal && (
+        <Modal
+          largeImageURL={largeImageURL}
+          tags={tags}
+          onClose={toggleModal}
+        />
+      )}
+    </>
+  );
+};
 
-        return (
-            <>
-                <li key={id} className={style.GalleryItem} onClick={this.toggleModal}>
-                    <img
-                        className={style.GalleryItemImg}
-                        src={webformatURL}
-                        width="400"
-                        alt={tags}
-                    />
-                </li>
-
-                {showModal && (
-                    <Modal
-                        largeImageURL={largeImageURL}
-                        tags={tags}
-                        onClose={this.toggleModal}
-                    />
-                )}
-            </>
-        );
-    }
-}
+ImageGalleryItem.propTypes = {
+  webformatURL: PropTypes.string.isRequired,
+  largeImageURL: PropTypes.string.isRequired,
+  tags: PropTypes.string.isRequired,
+};

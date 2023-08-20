@@ -1,10 +1,10 @@
 import React from 'react';
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
+
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { imagesMap } from '../../utils/imagesMap.js';
 import * as API from '../../API/api';
-
 
 import { Container } from './App.styled';
 import { Button } from 'components/Button';
@@ -13,81 +13,72 @@ import { Loader } from 'components/Loader';
 import { Searchbar } from '../Searchbar';
 import { Section } from 'components/Section';
 
-export class App extends Component {
-    state = {
-        images: null,
-        query: '',
-        page: 1,
-        isLoading: false,
-        error: null,
-        totalHits: null,
+export const App = () => {
+  const [images, setImages] = useState(null);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [totalHits, setTotalHits] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (query === '') return;
+
+      setIsLoading(true);
+
+      try {
+        const { hits, totalHits } = await API.fetchImgs(query, page);
+
+        setImages(prevImages => [...prevImages, ...imagesMap(hits)]);
+        setTotalHits(totalHits);
+
+        if (totalHits === 0) {
+          toast(
+            'There are no images matching your search query. Please try again.'
+          );
+        }
+        if (page === 1 && totalHits !== 0) {
+          toast(`We found ${totalHits} images`);
+        }
+      } catch (error) {
+        setError(error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    async componentDidUpdate(_, prevState) {
-        if (
-            prevState.query !== this.state.query ||
-            prevState.page !== this.state.page
-        ) {
-            this.setState({ isLoading: true });
+    fetchData();
+  }, [query, page]);
 
-            try {
-                const { hits, totalHits } = await API.fetchImgs(
-                    this.state.query,
-                    this.state.page
-                );
-
-                this.setState(prevState => {
-                    return {
-                        images: [...prevState.images, ...imagesMap(hits)],
-                        totalHits,
-                    };
-                });
-
-                if (totalHits === 0) {
-                    toast(
-                        'There are no images matching your search query. Please try again.'
-                    );
-                }
-                if (this.state.page === 1 && totalHits !== 0) {
-                    toast(`We found ${totalHits} images`);
-                }
-            } catch (error) {
-                this.setState({ error });
-            } finally {
-                this.setState({ isLoading: false });
-            }
-        }
+  const handelSubmitForm = newQuery => {
+    if (newQuery.trim() === '') {
+      toast.error('Enter data to search');
+      return;
     }
 
-    handelSubmitForm = query => {
-        if (query.trim() === '') {
-            return toast.error('Enter data to search');
-        }
+    setImages([]);
+    setPage(1);
+    setQuery(newQuery);
+  };
 
-        this.setState({ images: [], page: 1, query });
-    };
+  const handleButtonLoad = () => {
+    setPage(prevPage => prevPage + 1);
+  };
 
-    handleButtomLoad = () => {
-        this.setState(prevState => ({ page: prevState.page + 1 }));
-    };
+  return (
+    <Container>
+      <Searchbar onSubmit={handelSubmitForm} />
+      {error && <p>Whoops, something went wrong: {error.message}</p>}
+      <Section>
+        {isLoading && <Loader />}
+        {images && <ImageGallery images={images} />}
 
-    render() {
-        const { images, isLoading, error, totalHits, page } = this.state;
-
-        return (
-            <Container>
-                <Searchbar onSubmit={this.handelSubmitForm} />
-                {error && <p>Whoops, something went wrong: {error.message}</p>}
-                <Section>
-                    {isLoading && <Loader />}
-                    {images && <ImageGallery images={images} />}
-
-                    {images && totalHits - page * 12 > 0 && (
-                        <Button onClick={this.handleButtomLoad} />
-                    )}
-                </Section>
-                <ToastContainer />
-            </Container>
-        );
-    }
-}
+        {images && totalHits - page * 12 > 0 && (
+          <Button onClick={handleButtonLoad} />
+        )}
+      </Section>
+      <ToastContainer />
+    </Container>
+  );
+};

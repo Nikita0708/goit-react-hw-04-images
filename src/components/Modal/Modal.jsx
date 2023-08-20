@@ -1,38 +1,40 @@
 import React, { Component } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import style from './Modal.module.css';
 
-export class Modal extends Component {
-    static propTypes = {
-        onClose: PropTypes.func.isRequired,
-    };
-    componentDidMount() {
-        window.addEventListener('keydown', this.closeModalByEsc);
-    }
-
-    componentWillUnmount() {
-        window.removeEventListener('keydown', this.closeModalByEsc);
-    }
-
-    closeModalByEsc = event => {
-        if (event.code === 'Escape') {
-            this.props.onClose();
-        }
-    };
-    closeModalOverlay = event => {
-        if (event.currentTarget === event.target) {
-            this.props.onClose();
-        }
+export const Modal = ({ onClose, largeImageURL, tags }) => {
+  useEffect(() => {
+    const closeModalByEsc = event => {
+      if (event.code === 'Escape') {
+        onClose();
+      }
     };
 
-    render() {
-        const { largeImageURL, tags } = this.props;
-        return (
-            <div className={style.Overlay} onClick={this.closeModalOverlay}>
-                <div className={style.Modal}>
-                    <img src={largeImageURL} alt={tags} width="850" />
-                </div>
-            </div>
-        );
+    window.addEventListener('keydown', closeModalByEsc);
+
+    return () => {
+      window.removeEventListener('keydown', closeModalByEsc);
+    };
+  }, [onClose]);
+
+  const closeModalOverlay = event => {
+    if (event.currentTarget === event.target) {
+      onClose();
     }
-}
+  };
+
+  return (
+    <div className={style.Overlay} onClick={closeModalOverlay}>
+      <div className={style.Modal}>
+        <img src={largeImageURL} alt={tags} width="850" />
+      </div>
+    </div>
+  );
+};
+
+Modal.propTypes = {
+  onClose: PropTypes.func.isRequired,
+  largeImageURL: PropTypes.string.isRequired,
+  tags: PropTypes.string.isRequired,
+};
